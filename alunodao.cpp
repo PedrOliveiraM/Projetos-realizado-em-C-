@@ -5,10 +5,120 @@
 #include <sstream>
 #include <list>
 #include <fstream>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <list>
+#include <set>
 
 AlunoDAO::AlunoDAO(QString NomeDoArquivo):
     nomeDoArquivoDisco(NomeDoArquivo)
 {
+
+}
+std::list<std::string> AlunoDAO::separarCursos(QString nomeArquivo)
+{
+    std::list<std::string> numerosMeio;
+    std::set<std::string> numerosMeioSet;
+
+    std::ifstream arquivo(nomeArquivo.toStdString());
+    if (!arquivo) {
+        throw QString("Erro ao abrir o arquivo.");
+    }
+
+    std::string linha;
+    while (std::getline(arquivo, linha)) {
+        std::list<std::string> dados = splitString(linha, ';');
+        if (dados.size() >= 3) {
+            std::string matricula = dados.front();
+            std::size_t primeiroPontoPos = matricula.find('.');
+            std::size_t segundoPontoPos = matricula.find('.', primeiroPontoPos + 1);
+            if (primeiroPontoPos != std::string::npos && segundoPontoPos != std::string::npos) {
+                std::string numerosDoMeio = matricula.substr(segundoPontoPos + 1, matricula.find('.', segundoPontoPos + 1) - segundoPontoPos - 1);
+                if (numerosMeioSet.find(numerosDoMeio) == numerosMeioSet.end()) {
+                    numerosMeio.push_back(numerosDoMeio);
+                    numerosMeioSet.insert(numerosDoMeio);
+                }
+            }
+        }
+    }
+
+    return numerosMeio;
+}
+
+
+std::list<std::string> AlunoDAO::separarTurmas(QString nomeArquivo)
+{
+
+    std::list<std::string> turmas;
+    std::set<std::string> turmasSet;
+
+    std::ifstream arquivo(nomeArquivo.toStdString());
+    if (!arquivo) {
+        throw QString("Erro ao abrir o arquivo.");
+    }
+
+    std::string linha;
+    while (std::getline(arquivo, linha)) {
+        std::list<std::string> dados = splitString(linha, ';');
+        if (dados.size() >= 3) {
+            std::list<std::string> turmaTokens = splitString(dados.back(), ' ');
+            for (const auto& turma : turmaTokens) {
+                if (!turma.empty() && turma.find("XXX") == std::string::npos) {
+                    if (turmasSet.find(turma) == turmasSet.end()) {
+                        turmas.push_back(turma);
+                        turmasSet.insert(turma);
+                    }
+                }
+            }
+        }
+    }
+
+    return turmas;
+
+
+}
+
+std::list<std::string> AlunoDAO::splitString(const std::string &input, char delimiter)
+{
+    std::list<std::string> tokens;
+    std::istringstream iss(input);
+    std::string token;
+    while (std::getline(iss, token, delimiter)) {
+        tokens.push_back(token);
+    }
+    return tokens;
+
+}
+
+std::list<std::string> AlunoDAO::separarDisciplinas(QString nomeArquivo)
+{
+    std::list<std::string> disciplinas;
+    std::set<std::string> disciplinasSet;
+
+    std::ifstream arquivo(nomeArquivo.toStdString());  // Abre o arquivo especificado pelo nomeArquivo
+    if (!arquivo) {
+        throw QString("Erro ao abrir o arquivo.");
+    }
+
+    std::string linha;
+    while (std::getline(arquivo, linha)) {
+        std::list<std::string> dados = splitString(linha, ';');
+        if (dados.size() >= 3) {
+            std::list<std::string> disciplinaTokens = splitString(dados.back(), ' ');
+            for (const auto& disciplina : disciplinaTokens) {
+                if (!disciplina.empty() && disciplina.find("XXX") == std::string::npos) {
+                    std::string codigo = disciplina.substr(0, disciplina.find('-'));
+                    if (disciplinasSet.find(codigo) == disciplinasSet.end()) {
+                        disciplinas.push_back(codigo);
+                        disciplinasSet.insert(codigo);
+                    }
+                }
+            }
+        }
+    }
+
+    return disciplinas;
 
 }
 
@@ -117,6 +227,7 @@ std::list<Aluno> AlunoDAO::listagemPorAluno(QString nomeArquivo, QString aluno) 
                 objAluno.setAluno(QString::fromStdString(nome));
 
                 std::list<DisciplinaTurma> listaDeDisciplinas;
+
                 for (const auto& t : turmasSeparadas) {
                     std::string codDisciplina, numTurma;
                     std::stringstream turmaStream(t);
